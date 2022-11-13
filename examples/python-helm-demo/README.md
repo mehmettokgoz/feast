@@ -85,5 +85,5 @@ We use the Feast CLI to register and materialize features, and then retrieving v
       ```
     - Then run the included fetch script, which fetches both via the HTTP endpoint and for comparison, via the Python SDK
       ```bash
-        python test_python_fetch.py
+        python python_fetch.py
       ```

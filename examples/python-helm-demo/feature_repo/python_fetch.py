@@ -19,7 +19,7 @@ def run_demo_http():
 
 def run_demo_sdk():
     store = FeatureStore(repo_path=".")
-
+    FeatureStore.apply()
     print("\n--- Online features with SDK ---")
     features = store.get_online_features(
         features=[
@@ -40,4 +40,4 @@ def run_demo_sdk():
 
 if __name__ == "__main__":
     run_demo_sdk()
-    run_demo_http()
+    """run_demo_http()"""

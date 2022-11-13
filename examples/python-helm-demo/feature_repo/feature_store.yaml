@@ -1,10 +1,8 @@
-registry: gs://[YOUR GCS BUCKET]/demo-repo/registry.db
+registry: data/registry.db
 project: feast_python_demo
-provider: gcp
+provider: local
 online_store:
-  type: redis
-  # Note: this would normally be using instance URL's to access Redis
-  connection_string: localhost:6379,password=[YOUR PASSWORD]
-offline_store:
-  type: file
+  type: feast_custom_online_store.hazelcast_online_store.HazelcastOnlineStore
+  cluster_name: dev
+  cluster_members: localhost:5701
 entity_key_serialization_version: 2

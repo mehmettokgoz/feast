@@ -189,6 +189,7 @@ class RepoConfig(FeastBaseModel):
         self._online_store = None
         if "online_store" in data:
             self._online_config = data["online_store"]
+            print(self._online_config)
         else:
             if data["provider"] == "local":
                 self._online_config = "sqlite"
