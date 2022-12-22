@@ -31,25 +31,25 @@ class HazelcastOnlineStoreConfig(FeastConfigBaseModel):
     """List of member addresses which is connected to your cluster"""
 
     cloud: Optional[StrictBool] = False
-    """Enable if you want to connect Hazelcast Viridian service"""
+    """Enable if you want to connect a Hazelcast Viridian cluster"""
 
     discovery_token: Optional[StrictStr]
-    """The discovery token of your Viridian cluster"""
+    """The discovery token of your Hazelcast Viridian cluster"""
 
     ssl_enabled: Optional[StrictBool] = False
-    """Enable if you want to use TLS to connect your cluster"""
+    """Enable if you want to use TLS while connecting to your cluster"""
 
-    ca_path: Optional[StrictStr]
-    """"""
+    ssl_cafile_path: Optional[StrictStr]
+    """Absolute path of concatenated CA certificates used to validate server's certificates in PEM format."""
 
-    cert_path: Optional[StrictStr]
-    """"""
+    ssl_certfile_path: Optional[StrictStr]
+    """Absolute path of the client certificate in PEM format."""
 
-    key_path: Optional[StrictStr]
-    """"""
+    ssl_keyfile_path: Optional[StrictStr]
+    """Absolute path of the private key file for the client certificate in the PEM format."""
 
     ssl_password: Optional[StrictStr]
-    """"""
+    """Password for decrypting the keyfile if it is encrypted."""
 
 
 class HazelcastOnlineStore(OnlineStore):
@@ -65,9 +65,9 @@ class HazelcastOnlineStore(OnlineStore):
                     statistics_enabled=True,
                     ssl_enabled=True,
                     cloud_discovery_token=config.discovery_token,
-                    ssl_cafile=config.ca_path,
-                    ssl_certfile=config.cert_path,
-                    ssl_keyfile=config.key_path,
+                    ssl_cafile=config.ssl_cafile_path,
+                    ssl_certfile=config.ssl_certfile_path,
+                    ssl_keyfile=config.ssl_keyfile_path,
                     ssl_password=config.ssl_password
                 )
             elif config.ssl_enabled:
@@ -75,9 +75,9 @@ class HazelcastOnlineStore(OnlineStore):
                     cluster_name=config.cluster_name,
                     statistics_enabled=True,
                     ssl_enabled=True,
-                    ssl_cafile=config.ca_path,
-                    ssl_certfile=config.cert_path,
-                    ssl_keyfile=config.key_path,
+                    ssl_cafile=config.ssl_cafile_path,
+                    ssl_certfile=config.ssl_certfile_path,
+                    ssl_keyfile=config.ssl_keyfile_path,
                     ssl_password=config.ssl_password
                 )
             else:
