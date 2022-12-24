@@ -8,7 +8,7 @@ from feast.infra.key_encoding_utils import serialize_entity_key
 from feast.infra.online_stores.online_store import OnlineStore
 from feast.protos.feast.types.EntityKey_pb2 import EntityKey as EntityKeyProto
 from feast.protos.feast.types.Value_pb2 import Value as ValueProto
-from hazelcast import HazelcastClient
+import hazelcast
 
 from feast.repo_config import FeastConfigBaseModel
 
@@ -53,14 +53,14 @@ class HazelcastOnlineStoreConfig(FeastConfigBaseModel):
 
 
 class HazelcastOnlineStore(OnlineStore):
-    _client: Optional[HazelcastClient] = None
+    _client: Optional[hazelcast.HazelcastClient] = None
 
     def _get_client(self, config: HazelcastOnlineStoreConfig):
         logger = logging.getLogger("hazelcast")
         logger.setLevel(logging.ERROR)
         if not self._client:
             if config.cloud:
-                self._client = HazelcastClient(
+                self._client = hazelcast.HazelcastClient(
                     cluster_name=config.cluster_name,
                     statistics_enabled=True,
                     ssl_enabled=True,
@@ -71,7 +71,7 @@ class HazelcastOnlineStore(OnlineStore):
                     ssl_password=config.ssl_password
                 )
             elif config.ssl_enabled:
-                self._client = HazelcastClient(
+                self._client = hazelcast.HazelcastClient(
                     cluster_name=config.cluster_name,
                     statistics_enabled=True,
                     ssl_enabled=True,
@@ -81,7 +81,7 @@ class HazelcastOnlineStore(OnlineStore):
                     ssl_password=config.ssl_password
                 )
             else:
-                self._client = HazelcastClient(
+                self._client = hazelcast.HazelcastClient(
                     statistics_enabled=True,
                     cluster_members=config.cluster_members,
                     cluster_name=config.cluster_name
