@@ -445,7 +445,7 @@ class build_ext(_build_ext):
 
         print(f"Go env: {go_env}")
         print(f"CWD: {os.getcwd()}")
-
+        print(f"ext: {ext.name}")
         destination = os.path.dirname(os.path.abspath(self.get_ext_fullpath(ext.name)))
         subprocess.check_call(
             ["go", "install", "golang.org/x/tools/cmd/goimports"],

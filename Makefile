@@ -21,7 +21,7 @@ ifeq ($(shell uname -s), Darwin)
 	OS = osx
 endif
 TRINO_VERSION ?= 376
-
+PYTHON = 3.8
 # General
 
 format: format-python format-java format-go

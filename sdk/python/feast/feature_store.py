@@ -49,6 +49,7 @@ from feast.data_source import (
     KinesisSource,
     PushMode,
     PushSource,
+    HazelcastSource,
 )
 from feast.diff.infra_diff import InfraDiff, diff_infra_protos
 from feast.diff.registry_diff import RegistryDiff, apply_diff_to_registry, diff_between
@@ -858,6 +859,7 @@ class FeatureStore:
                 isinstance(data_source, PushSource)
                 or isinstance(data_source, KafkaSource)
                 or isinstance(data_source, KinesisSource)
+                or isinstance(data_source, HazelcastSource)
             ):
                 assert data_source.batch_source
                 batch_sources_to_add.append(data_source.batch_source)

@@ -37,11 +37,11 @@ class KafkaOptions:
     """
 
     def __init__(
-        self,
-        kafka_bootstrap_servers: str,
-        message_format: StreamFormat,
-        topic: str,
-        watermark_delay_threshold: Optional[timedelta] = None,
+            self,
+            kafka_bootstrap_servers: str,
+            message_format: StreamFormat,
+            topic: str,
+            watermark_delay_threshold: Optional[timedelta] = None,
     ):
         self.kafka_bootstrap_servers = kafka_bootstrap_servers
         self.message_format = message_format
@@ -103,10 +103,10 @@ class KinesisOptions:
     """
 
     def __init__(
-        self,
-        record_format: StreamFormat,
-        region: str,
-        stream_name: str,
+            self,
+            record_format: StreamFormat,
+            region: str,
+            stream_name: str,
     ):
         self.record_format = record_format
         self.region = region
@@ -149,6 +149,51 @@ class KinesisOptions:
         return kinesis_options_proto
 
 
+class HazelcastOptions:
+    """
+    DataSource Hazelcast options used to source features from Hazelcast entries
+    """
+
+    def __init__(
+            self,
+            imap_name: str,
+            cluster_name: str,
+            cluster_address: str,
+    ):
+        self.imap_name = imap_name
+        self.cluster_name = cluster_name
+        self.cluster_address = cluster_address
+
+    @classmethod
+    def from_proto(cls, hazelcast_options_proto: DataSourceProto.HazelcastOptions):
+        """
+        Creates a HazelcastOptions from a protobuf representation of a Hazelcast option
+        Args:
+            hazelcast_options_proto: A protobuf representation of a source options
+        Returns:
+            Returns a HazelcastOptions object based on the hazelcast_options protobuf
+        """
+        hazelcast_options = cls(
+            imap_name=hazelcast_options_proto.imap_name,
+            cluster_name=hazelcast_options_proto.cluster_name,
+            cluster_address=hazelcast_options_proto.cluster_address,
+        )
+        return hazelcast_options
+
+    def to_proto(self) -> DataSourceProto.HazelcastOptions:
+        """
+        Converts an HazelcastOptions object to its protobuf representation.
+        Returns:
+            HazelcastOptionsProto protobuf
+        """
+        hazelcast_options_proto = DataSourceProto.HazelcastOptions(
+            imap_name=self.imap_name,
+            cluster_name=self.cluster_name,
+            cluster_address=self.cluster_address,
+        )
+        return hazelcast_options_proto
+
+
 _DATA_SOURCE_OPTIONS = {
     DataSourceProto.SourceType.BATCH_FILE: "feast.infra.offline_stores.file_source.FileSource",
     DataSourceProto.SourceType.BATCH_BIGQUERY: "feast.infra.offline_stores.bigquery_source.BigQuerySource",
@@ -161,6 +206,7 @@ _DATA_SOURCE_OPTIONS = {
     DataSourceProto.SourceType.STREAM_KINESIS: "feast.data_source.KinesisSource",
     DataSourceProto.SourceType.REQUEST_SOURCE: "feast.data_source.RequestSource",
     DataSourceProto.SourceType.PUSH_SOURCE: "feast.data_source.PushSource",
+    DataSourceProto.SourceType.STREAM_HAZELCAST: "feast.data_source.HazelcastSource",
 }
 
 
@@ -195,16 +241,16 @@ class DataSource(ABC):
     date_partition_column: str
 
     def __init__(
-        self,
-        *,
-        name: str,
-        timestamp_field: Optional[str] = None,
-        created_timestamp_column: Optional[str] = None,
-        field_mapping: Optional[Dict[str, str]] = None,
-        description: Optional[str] = "",
-        tags: Optional[Dict[str, str]] = None,
-        owner: Optional[str] = "",
-        date_partition_column: Optional[str] = None,
+            self,
+            *,
+            name: str,
+            timestamp_field: Optional[str] = None,
+            created_timestamp_column: Optional[str] = None,
+            field_mapping: Optional[Dict[str, str]] = None,
+            description: Optional[str] = "",
+            tags: Optional[Dict[str, str]] = None,
+            owner: Optional[str] = "",
+            date_partition_column: Optional[str] = None,
     ):
         """
         Creates a DataSource object.
@@ -231,8 +277,8 @@ class DataSource(ABC):
         )
         self.field_mapping = field_mapping if field_mapping else {}
         if (
-            self.timestamp_field
-            and self.timestamp_field == self.created_timestamp_column
+                self.timestamp_field
+                and self.timestamp_field == self.created_timestamp_column
         ):
             raise ValueError(
                 "Please do not use the same column for 'timestamp_field' and 'created_timestamp_column'."
@@ -258,14 +304,14 @@ class DataSource(ABC):
             raise TypeError("Comparisons should only involve DataSource class objects.")
 
         if (
-            self.name != other.name
-            or self.timestamp_field != other.timestamp_field
-            or self.created_timestamp_column != other.created_timestamp_column
-            or self.field_mapping != other.field_mapping
-            or self.date_partition_column != other.date_partition_column
-            or self.description != other.description
-            or self.tags != other.tags
-            or self.owner != other.owner
+                self.name != other.name
+                or self.timestamp_field != other.timestamp_field
+                or self.created_timestamp_column != other.created_timestamp_column
+                or self.field_mapping != other.field_mapping
+                or self.date_partition_column != other.date_partition_column
+                or self.description != other.description
+                or self.tags != other.tags
+                or self.owner != other.owner
         ):
             return False
 
@@ -288,9 +334,9 @@ class DataSource(ABC):
         """
         data_source_type = data_source.type
         if not data_source_type or (
-            data_source_type
-            not in list(_DATA_SOURCE_OPTIONS.keys())
-            + [DataSourceProto.SourceType.CUSTOM_SOURCE]
+                data_source_type
+                not in list(_DATA_SOURCE_OPTIONS.keys())
+                + [DataSourceProto.SourceType.CUSTOM_SOURCE]
         ):
             raise ValueError("Could not identify the source type being added.")
 
@@ -325,7 +371,7 @@ class DataSource(ABC):
         raise NotImplementedError
 
     def get_table_column_names_and_types(
-        self, config: RepoConfig
+            self, config: RepoConfig
     ) -> Iterable[Tuple[str, str]]:
         """
         Returns the list of column names and raw column types.
@@ -345,21 +391,21 @@ class DataSource(ABC):
 @typechecked
 class KafkaSource(DataSource):
     def __init__(
-        self,
-        *,
-        name: str,
-        timestamp_field: str,
-        message_format: StreamFormat,
-        bootstrap_servers: Optional[str] = None,
-        kafka_bootstrap_servers: Optional[str] = None,
-        topic: Optional[str] = None,
-        created_timestamp_column: Optional[str] = "",
-        field_mapping: Optional[Dict[str, str]] = None,
-        description: Optional[str] = "",
-        tags: Optional[Dict[str, str]] = None,
-        owner: Optional[str] = "",
-        batch_source: Optional[DataSource] = None,
-        watermark_delay_threshold: Optional[timedelta] = None,
+            self,
+            *,
+            name: str,
+            timestamp_field: str,
+            message_format: StreamFormat,
+            bootstrap_servers: Optional[str] = None,
+            kafka_bootstrap_servers: Optional[str] = None,
+            topic: Optional[str] = None,
+            created_timestamp_column: Optional[str] = "",
+            field_mapping: Optional[Dict[str, str]] = None,
+            description: Optional[str] = "",
+            tags: Optional[Dict[str, str]] = None,
+            owner: Optional[str] = "",
+            batch_source: Optional[DataSource] = None,
+            watermark_delay_threshold: Optional[timedelta] = None,
     ):
         """
         Creates a KafkaSource object.
@@ -424,12 +470,12 @@ class KafkaSource(DataSource):
             return False
 
         if (
-            self.kafka_options.kafka_bootstrap_servers
-            != other.kafka_options.kafka_bootstrap_servers
-            or self.kafka_options.message_format != other.kafka_options.message_format
-            or self.kafka_options.topic != other.kafka_options.topic
-            or self.kafka_options.watermark_delay_threshold
-            != other.kafka_options.watermark_delay_threshold
+                self.kafka_options.kafka_bootstrap_servers
+                != other.kafka_options.kafka_bootstrap_servers
+                or self.kafka_options.message_format != other.kafka_options.message_format
+                or self.kafka_options.topic != other.kafka_options.topic
+                or self.kafka_options.watermark_delay_threshold
+                != other.kafka_options.watermark_delay_threshold
         ):
             return False
 
@@ -445,7 +491,7 @@ class KafkaSource(DataSource):
             watermark_delay_threshold = (
                 timedelta(days=0)
                 if data_source.kafka_options.watermark_delay_threshold.ToNanoseconds()
-                == 0
+                   == 0
                 else data_source.kafka_options.watermark_delay_threshold.ToTimedelta()
             )
         return KafkaSource(
@@ -488,13 +534,116 @@ class KafkaSource(DataSource):
         pass
 
     def get_table_column_names_and_types(
-        self, config: RepoConfig
+            self, config: RepoConfig
     ) -> Iterable[Tuple[str, str]]:
         pass
 
     @staticmethod
     def source_datatype_to_feast_value_type() -> Callable[[str], ValueType]:
         return type_map.redshift_to_feast_value_type
+
+    def get_table_query_string(self) -> str:
+        raise NotImplementedError
+
+
+@typechecked
+class HazelcastSource(DataSource):
+    def __init__(self,
+                 *,
+                 name: str,
+                 timestamp_field: Optional[str] = None,
+                 created_timestamp_column: Optional[str] = None,
+                 field_mapping: Optional[Dict[str, str]] = None,
+                 imap_name: Optional[str] = "",
+                 cluster_name: Optional[str] = "",
+                 cluster_address: Optional[str] = "",
+                 description: Optional[str] = "",
+                 tags: Optional[Dict[str, str]] = None,
+                 owner: Optional[str] = "",
+                 batch_source: Optional[DataSource] = None,
+                 date_partition_column: Optional[str] = None
+                 ):
+        """
+        Creates a HazelcastSource object.
+        """
+        super().__init__(
+            name=name,
+            timestamp_field=timestamp_field,
+            created_timestamp_column=created_timestamp_column,
+            field_mapping=field_mapping,
+            description=description,
+            tags=tags,
+            owner=owner,
+            date_partition_column=date_partition_column
+        )
+        self.batch_source = batch_source
+
+        self.hazelcast_options = HazelcastOptions(
+            imap_name=imap_name,
+            cluster_name=cluster_name,
+            cluster_address=cluster_address,
+        )
+
+    def __eq__(self, other):
+        if not isinstance(other, HazelcastSource):
+            raise TypeError(
+                "Comparisons should only involve HazelcastSource class objects."
+            )
+        if not super().__eq__(other):
+            return False
+        if (
+                self.hazelcast_options.imap_name != other.hazelcast_options.imap_name
+                or self.hazelcast_options.cluster_name != other.hazelcast_options.cluster_name
+                or self.hazelcast_options.cluster_address != other.hazelcast_options.cluster_address
+        ):
+            return False
+        return True
+
+    def __hash__(self):
+        return super().__hash__()
+
+    @staticmethod
+    def from_proto(data_source: DataSourceProto):
+        return HazelcastSource(
+            name=data_source.name,
+            timestamp_field=data_source.timestamp_field,
+            field_mapping=dict(data_source.field_mapping),
+            imap_name=data_source.hazelcast_options.imap_name,
+            cluster_name=data_source.hazelcast_options.cluster_name,
+            cluster_address=data_source.hazelcast_options.cluster_address,
+            created_timestamp_column=data_source.created_timestamp_column,
+            description=data_source.description,
+            tags=dict(data_source.tags),
+            owner=data_source.owner,
+            batch_source=DataSource.from_proto(data_source.batch_source)
+            if data_source.batch_source
+            else None,
+        )
+
+    def to_proto(self) -> DataSourceProto:
+        data_source_proto = DataSourceProto(
+            name=self.name,
+            type=DataSourceProto.STREAM_HAZELCAST,
+            field_mapping=self.field_mapping,
+            hazelcast_options=self.hazelcast_options.to_proto(),
+            description=self.description,
+            tags=self.tags,
+            owner=self.owner,
+        )
+
+        data_source_proto.timestamp_field = self.timestamp_field
+        data_source_proto.created_timestamp_column = self.created_timestamp_column
+        if self.batch_source:
+            data_source_proto.batch_source.MergeFrom(self.batch_source.to_proto())
+
+        return data_source_proto
+
+    @staticmethod
+    def source_datatype_to_feast_value_type() -> Callable[[str], ValueType]:
+        pass
+
+    def get_table_column_names_and_types(self, config: RepoConfig) -> Iterable[Tuple[str, str]]:
+        pass
 
     def get_table_query_string(self) -> str:
         raise NotImplementedError
@@ -521,13 +670,13 @@ class RequestSource(DataSource):
     owner: str
 
     def __init__(
-        self,
-        *,
-        name: str,
-        schema: List[Field],
-        description: Optional[str] = "",
-        tags: Optional[Dict[str, str]] = None,
-        owner: Optional[str] = "",
+            self,
+            *,
+            name: str,
+            schema: List[Field],
+            description: Optional[str] = "",
+            tags: Optional[Dict[str, str]] = None,
+            owner: Optional[str] = "",
     ):
         """Creates a RequestSource object."""
         super().__init__(name=name, description=description, tags=tags, owner=owner)
@@ -537,7 +686,7 @@ class RequestSource(DataSource):
         pass
 
     def get_table_column_names_and_types(
-        self, config: RepoConfig
+            self, config: RepoConfig
     ) -> Iterable[Tuple[str, str]]:
         pass
 
@@ -613,7 +762,7 @@ class KinesisSource(DataSource):
         pass
 
     def get_table_column_names_and_types(
-        self, config: RepoConfig
+            self, config: RepoConfig
     ) -> Iterable[Tuple[str, str]]:
         pass
 
@@ -645,19 +794,19 @@ class KinesisSource(DataSource):
         raise NotImplementedError
 
     def __init__(
-        self,
-        *,
-        name: str,
-        record_format: StreamFormat,
-        region: str,
-        stream_name: str,
-        timestamp_field: Optional[str] = "",
-        created_timestamp_column: Optional[str] = "",
-        field_mapping: Optional[Dict[str, str]] = None,
-        description: Optional[str] = "",
-        tags: Optional[Dict[str, str]] = None,
-        owner: Optional[str] = "",
-        batch_source: Optional[DataSource] = None,
+            self,
+            *,
+            name: str,
+            record_format: StreamFormat,
+            region: str,
+            stream_name: str,
+            timestamp_field: Optional[str] = "",
+            created_timestamp_column: Optional[str] = "",
+            field_mapping: Optional[Dict[str, str]] = None,
+            description: Optional[str] = "",
+            tags: Optional[Dict[str, str]] = None,
+            owner: Optional[str] = "",
+            batch_source: Optional[DataSource] = None,
     ):
         if record_format is None:
             raise ValueError("Record format must be specified for kinesis source")
@@ -686,9 +835,9 @@ class KinesisSource(DataSource):
             return False
 
         if (
-            self.kinesis_options.record_format != other.kinesis_options.record_format
-            or self.kinesis_options.region != other.kinesis_options.region
-            or self.kinesis_options.stream_name != other.kinesis_options.stream_name
+                self.kinesis_options.record_format != other.kinesis_options.record_format
+                or self.kinesis_options.region != other.kinesis_options.region
+                or self.kinesis_options.stream_name != other.kinesis_options.stream_name
         ):
             return False
 
@@ -733,13 +882,13 @@ class PushSource(DataSource):
     batch_source: DataSource
 
     def __init__(
-        self,
-        *,
-        name: str,
-        batch_source: DataSource,
-        description: Optional[str] = "",
-        tags: Optional[Dict[str, str]] = None,
-        owner: Optional[str] = "",
+            self,
+            *,
+            name: str,
+            batch_source: DataSource,
+            description: Optional[str] = "",
+            tags: Optional[Dict[str, str]] = None,
+            owner: Optional[str] = "",
     ):
         """
         Creates a PushSource object.
@@ -775,7 +924,7 @@ class PushSource(DataSource):
         pass
 
     def get_table_column_names_and_types(
-        self, config: RepoConfig
+            self, config: RepoConfig
     ) -> Iterable[Tuple[str, str]]:
         pass
 
