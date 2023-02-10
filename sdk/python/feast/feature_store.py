@@ -40,7 +40,7 @@ from colorama import Fore, Style
 from google.protobuf.timestamp_pb2 import Timestamp
 from tqdm import tqdm
 
-from feast import feature_server, flags_helper, ui_server, utils
+from feast import feature_server, flags_helper, ui_server, utils, websocket_client
 from feast.base_feature_view import BaseFeatureView
 from feast.batch_feature_view import BatchFeatureView
 from feast.data_source import (
@@ -2309,6 +2309,8 @@ class FeatureStore:
                 raise ValueError(
                     f"Unsupported server type '{type_}'. Must be one of 'http' or 'grpc'."
                 )
+        elif self.config.websocket is True:
+            websocket_client.start_websocket_client(self, "localhost", 7888)
         else:
             if type_ != "http":
                 raise ValueError(

@@ -720,10 +720,14 @@ def serve_command(
         cli_check_repo(repo, fs_yaml_file)
         store = FeatureStore(repo_path=str(repo), fs_yaml_file=fs_yaml_file)
 
+    if type_ == "websocket":
+        print("Websocket is true!")
+        store.config.websocket = True
     if go:
         # Turn on Go feature retrieval.
         store.config.go_feature_serving = True
-
+    print("Now going through serve command.")
+    print(store.config)
     store.serve(host, port, type_, no_access_log, no_feature_log)
 
 
