@@ -126,7 +126,7 @@ CASSANDRA_REQUIRED = [
 ]
 
 HAZELCAST_REQUIRED = [
-    "hazelcast-python-client>=5.2.0"
+    "hazelcast-python-client>=5.1.0",
 ]
 
 GE_REQUIRED = ["great_expectations>=0.14.0,<0.15.0"]
