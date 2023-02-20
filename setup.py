@@ -125,6 +125,10 @@ CASSANDRA_REQUIRED = [
     "cassandra-driver>=3.24.0,<4",
 ]
 
+HAZELCAST_REQUIRED = [
+    "hazelcast-python-client>=5.2.0"
+]
+
 GE_REQUIRED = ["great_expectations>=0.14.0,<0.15.0"]
 
 GO_REQUIRED = [
@@ -196,6 +200,7 @@ CI_REQUIRED = (
     + HBASE_REQUIRED
     + CASSANDRA_REQUIRED
     + AZURE_REQUIRED
+    + HAZELCAST_REQUIRED
 )
 
 
@@ -533,6 +538,7 @@ setup(
         "go": GO_REQUIRED,
         "docs": DOCS_REQUIRED,
         "cassandra": CASSANDRA_REQUIRED,
+        "hazelcast": HAZELCAST_REQUIRED,
     },
     include_package_data=True,
     license="Apache",

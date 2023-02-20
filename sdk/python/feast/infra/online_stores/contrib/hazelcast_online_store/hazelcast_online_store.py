@@ -104,16 +104,17 @@ class HazelcastOnlineStore(OnlineStore):
                 entity_key,
                 entity_key_serialization_version=config.entity_key_serialization_version,
             ).hex()
-            event_ts = _to_utc_timestamp(event_ts)
+            event_ts_utc = _to_utc_timestamp(event_ts)
+            created_ts_utc = 0
             if created_ts is not None:
-                created_ts = _to_utc_timestamp(created_ts)
-            for feature_name, feature_value in values.items():
-                feature_value = feature_value.SerializeToString().hex()
+                created_ts_utc = _to_utc_timestamp(created_ts)
+            for feature_name, value in values.items():
+                feature_value = value.SerializeToString().hex()
                 __key = str(entity_key_bin) + feature_name
                 fv_map.put(__key, HazelcastJsonValue({"feature_name": feature_name,
                                                       "feature_value": feature_value,
-                                                      "event_ts": event_ts,
-                                                      "created_ts": created_ts}), config.online_store.key_ttl_seconds)
+                                                      "event_ts": event_ts_utc,
+                                                      "created_ts": created_ts_utc}), config.online_store.key_ttl_seconds)
                 if progress:
                     progress(1)
 
@@ -136,8 +137,14 @@ class HazelcastOnlineStore(OnlineStore):
             entity_key_str = str(serialize_entity_key(entity_key,
                                                       entity_key_serialization_version=config.entity_key_serialization_version).hex())
             __keys = []
-            for feature in requested_features:
-                __keys.append(entity_key_str + feature)
+
+            if requested_features:
+                for feature in requested_features:
+                    __keys.append(entity_key_str + feature)
+            else:
+                for feature in table.features:
+                    __keys.append(entity_key_str + feature.name)
+
             data = fv_map.get_all(__keys).result()
             entry = dict()
             event_ts: Optional[datetime] = None

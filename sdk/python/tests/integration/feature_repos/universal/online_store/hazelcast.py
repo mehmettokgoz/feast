@@ -1,7 +1,7 @@
 import random
 import string
 import time
-from typing import Dict
+from typing import Dict, Any
 
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.waiting_utils import wait_for_logs
@@ -11,7 +11,9 @@ from tests.integration.feature_repos.universal.online_store_creator import Onlin
 
 class HazelcastOnlineStoreCreator(OnlineStoreCreator):
 
-    cluster_name = ""
+    cluster_name: str = ""
+    container:  DockerContainer = None
+
     def __init__(self, project_name: str, **kwargs):
         super().__init__(project_name)
         self.cluster_name = ''.join(random.choice(string.ascii_lowercase) for i in range(5))
@@ -22,10 +24,10 @@ class HazelcastOnlineStoreCreator(OnlineStoreCreator):
             .with_exposed_ports(5701)
         )
 
-    def create_online_store(self) -> Dict[str, str]:
+    def create_online_store(self) -> Dict[str, Any]:
         self.container.start()
-        cluster_member = self.container.get_container_host_ip()+":"+self.container.get_exposed_port(5701)
-        log_string_to_wait_for = r"Cluster name: "+self.cluster_name
+        cluster_member = self.container.get_container_host_ip() + ":" + self.container.get_exposed_port(5701)
+        log_string_to_wait_for = r"Cluster name: " + self.cluster_name
         wait_for_logs(self.container, predicate=log_string_to_wait_for, timeout=10)
         return {"type": "hazelcast", "cluster_name": self.cluster_name, "cluster_members": [cluster_member]}
 
