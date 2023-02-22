@@ -1,13 +1,13 @@
 import logging
 from datetime import datetime
-from typing import Sequence, List, Optional, Tuple, Dict, Callable, Any, Literal
+from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple
 
 import pytz
 from hazelcast.client import HazelcastClient
 from hazelcast.core import HazelcastJsonValue
 from pydantic import StrictStr
 
-from feast import RepoConfig, FeatureView, Entity
+from feast import Entity, FeatureView, RepoConfig
 from feast.infra.key_encoding_utils import serialize_entity_key
 from feast.infra.online_stores.online_store import OnlineStore
 from feast.protos.feast.types.EntityKey_pb2 import EntityKey as EntityKeyProto
@@ -62,7 +62,7 @@ class HazelcastOnlineStore(OnlineStore):
                     ssl_cafile=config.ssl_cafile_path,
                     ssl_certfile=config.ssl_certfile_path,
                     ssl_keyfile=config.ssl_keyfile_path,
-                    ssl_password=config.ssl_password
+                    ssl_password=config.ssl_password,
                 )
             elif config.ssl_cafile_path != "":
                 self._client = HazelcastClient(
@@ -72,25 +72,25 @@ class HazelcastOnlineStore(OnlineStore):
                     ssl_cafile=config.ssl_cafile_path,
                     ssl_certfile=config.ssl_certfile_path,
                     ssl_keyfile=config.ssl_keyfile_path,
-                    ssl_password=config.ssl_password
+                    ssl_password=config.ssl_password,
                 )
             else:
                 self._client = HazelcastClient(
                     statistics_enabled=True,
                     cluster_members=config.cluster_members,
-                    cluster_name=config.cluster_name
+                    cluster_name=config.cluster_name,
                 )
         return self._client
 
     @log_exceptions_and_usage(online_store="hazelcast")
     def online_write_batch(
-            self,
-            config: RepoConfig,
-            table: FeatureView,
-            data: List[
-                Tuple[EntityKeyProto, Dict[str, ValueProto], datetime, Optional[datetime]]
-            ],
-            progress: Optional[Callable[[int], Any]]
+        self,
+        config: RepoConfig,
+        table: FeatureView,
+        data: List[
+            Tuple[EntityKeyProto, Dict[str, ValueProto], datetime, Optional[datetime]]
+        ],
+        progress: Optional[Callable[[int], Any]],
     ) -> None:
         online_store_config = config.online_store
         assert isinstance(online_store_config, HazelcastOnlineStoreConfig)
@@ -110,21 +110,28 @@ class HazelcastOnlineStore(OnlineStore):
             for feature_name, value in values.items():
                 feature_value = value.SerializeToString().hex()
                 __key = str(entity_key_bin) + feature_name
-                fv_map.put(__key, HazelcastJsonValue({"entity_key": entity_key_bin,
-                                                      "feature_name": feature_name,
-                                                      "feature_value": feature_value,
-                                                      "event_ts": event_ts_utc,
-                                                      "created_ts": created_ts_utc}),
-                           config.online_store.key_ttl_seconds)
+                fv_map.put(
+                    __key,
+                    HazelcastJsonValue(
+                        {
+                            "entity_key": entity_key_bin,
+                            "feature_name": feature_name,
+                            "feature_value": feature_value,
+                            "event_ts": event_ts_utc,
+                            "created_ts": created_ts_utc,
+                        }
+                    ),
+                    config.online_store.key_ttl_seconds,
+                )
                 if progress:
                     progress(1)
 
     def online_read(
-            self,
-            config: RepoConfig,
-            table: FeatureView,
-            entity_keys: List[EntityKeyProto],
-            requested_features: Optional[List[str]] = None
+        self,
+        config: RepoConfig,
+        table: FeatureView,
+        entity_keys: List[EntityKeyProto],
+        requested_features: Optional[List[str]] = None,
     ) -> List[Tuple[Optional[datetime], Optional[Dict[str, ValueProto]]]]:
         online_store_config = config.online_store
         assert isinstance(online_store_config, HazelcastOnlineStoreConfig)
@@ -137,8 +144,12 @@ class HazelcastOnlineStore(OnlineStore):
         entity_keys_str = {}
         for entity_key in entity_keys:
             feature_keys = []
-            entity_key_str = str(serialize_entity_key(entity_key,
-                                                      entity_key_serialization_version=config.entity_key_serialization_version).hex())
+            entity_key_str = str(
+                serialize_entity_key(
+                    entity_key,
+                    entity_key_serialization_version=config.entity_key_serialization_version,
+                ).hex()
+            )
             if requested_features:
                 for feature in requested_features:
                     feature_keys.append(entity_key_str + feature)
@@ -173,13 +184,13 @@ class HazelcastOnlineStore(OnlineStore):
         return entries
 
     def update(
-            self,
-            config: RepoConfig,
-            tables_to_delete: Sequence[FeatureView],
-            tables_to_keep: Sequence[FeatureView],
-            entities_to_delete: Sequence[Entity],
-            entities_to_keep: Sequence[Entity],
-            partial: bool
+        self,
+        config: RepoConfig,
+        tables_to_delete: Sequence[FeatureView],
+        tables_to_keep: Sequence[FeatureView],
+        entities_to_delete: Sequence[Entity],
+        entities_to_keep: Sequence[Entity],
+        partial: bool,
     ):
         online_store_config = config.online_store
         assert isinstance(online_store_config, HazelcastOnlineStoreConfig)
@@ -202,17 +213,22 @@ class HazelcastOnlineStore(OnlineStore):
                         'keyFormat' = 'varchar',
                         'valueFormat' = 'json-flat'
                     )
-                """).result()
+                """
+            ).result()
 
         for table in tables_to_delete:
-            client.sql.execute(f"DELETE FROM {_table_id(config.project, table)}").result()
-            client.sql.execute(f"DROP MAPPING IF EXISTS {_table_id(config.project, table)}").result()
+            client.sql.execute(
+                f"DELETE FROM {_table_id(config.project, table)}"
+            ).result()
+            client.sql.execute(
+                f"DROP MAPPING IF EXISTS {_table_id(config.project, table)}"
+            ).result()
 
     def teardown(
-            self,
-            config: RepoConfig,
-            tables: Sequence[FeatureView],
-            entities: Sequence[Entity]
+        self,
+        config: RepoConfig,
+        tables: Sequence[FeatureView],
+        entities: Sequence[Entity],
     ):
         online_store_config = config.online_store
         assert isinstance(online_store_config, HazelcastOnlineStoreConfig)

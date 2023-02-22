@@ -47,12 +47,8 @@ def collect_hazelcast_online_store_settings():
     is_viridian = cluster_type == "V"
 
     if is_viridian:
-        c_cluster_name = click.prompt(
-            "Cluster ID: "
-        )
-        c_discovery_token = click.prompt(
-            "Discovery Token: "
-        )
+        c_cluster_name = click.prompt("Cluster ID: ")
+        c_discovery_token = click.prompt("Discovery Token: ")
         c_ca_path = click.prompt("CA file path: ")
         c_cert_path = click.prompt("CERT file path: ")
         c_key_path = click.prompt("Key file path: ")
