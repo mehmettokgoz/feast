@@ -101,6 +101,15 @@ def start_server(
     get_registry_dump: Callable,
     project_id: str,
     registry_ttl_sec: int,
+    root_path: str = "",
 ):
-    app = get_app(store, get_registry_dump, project_id, registry_ttl_sec, host, port)
-    uvicorn.run(app, host=host, port=port)
+    app = get_app(
+        store,
+        get_registry_dump,
+        project_id,
+        registry_ttl_sec,
+        host,
+        port,
+    )
+    assert root_path is not None
+    uvicorn.run(app, host=host, port=port, root_path=root_path)

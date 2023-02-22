@@ -166,9 +166,9 @@ class FeatureStore:
 
         registry_config = self.config.get_registry_config()
         if registry_config.registry_type == "sql":
-            self._registry = SqlRegistry(registry_config, None)
+            self._registry = SqlRegistry(registry_config, self.config.project, None)
         else:
-            r = Registry(registry_config, repo_path=self.repo_path)
+            r = Registry(self.config.project, registry_config, repo_path=self.repo_path)
             r._initialize_registry(self.config.project)
             self._registry = r
 
@@ -210,7 +210,9 @@ class FeatureStore:
         downloaded synchronously, which may increase latencies if the triggering method is get_online_features().
         """
         registry_config = self.config.get_registry_config()
-        registry = Registry(registry_config, repo_path=self.repo_path)
+        registry = Registry(
+            self.config.project, registry_config, repo_path=self.repo_path
+        )
         registry.refresh(self.config.project)
 
         self._registry = registry
@@ -738,7 +740,7 @@ class FeatureStore:
 
         # Compute the desired difference between the current infra, as stored in the registry,
         # and the desired infra.
-        self._registry.refresh(self.project)
+        self._registry.refresh(project=self.project)
         current_infra_proto = self._registry.proto().infra.__deepcopy__()
         desired_registry_proto = desired_repo_contents.to_registry_proto()
         new_infra = self._provider.plan_infra(self.config, desired_registry_proto)
@@ -930,7 +932,10 @@ class FeatureStore:
             views_to_delete = [
                 ob
                 for ob in objects_to_delete
-                if isinstance(ob, FeatureView) or isinstance(ob, BatchFeatureView)
+                if (
+                    (isinstance(ob, FeatureView) or isinstance(ob, BatchFeatureView))
+                    and not isinstance(ob, StreamFeatureView)
+                )
             ]
             request_views_to_delete = [
                 ob for ob in objects_to_delete if isinstance(ob, RequestFeatureView)
@@ -2319,7 +2324,12 @@ class FeatureStore:
 
     @log_exceptions_and_usage
     def serve_ui(
-        self, host: str, port: int, get_registry_dump: Callable, registry_ttl_sec: int
+        self,
+        host: str,
+        port: int,
+        get_registry_dump: Callable,
+        registry_ttl_sec: int,
+        root_path: str = "",
     ) -> None:
         """Start the UI server locally"""
         if flags_helper.is_test():
@@ -2335,6 +2345,7 @@ class FeatureStore:
             get_registry_dump=get_registry_dump,
             project_id=self.config.project,
             registry_ttl_sec=registry_ttl_sec,
+            root_path=root_path,
         )
 
     @log_exceptions_and_usage

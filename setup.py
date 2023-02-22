@@ -75,8 +75,7 @@ REQUIRED = [
     "uvicorn[standard]>=0.14.0,<1",
     "dask>=2021.1.0",
     "bowler",  # Needed for automatic repo upgrades
-    "httpx>=0.23.3",
-    # FastAPI does not correctly pull starlette dependency on httpx see thread(https://github.com/tiangolo/fastapi/issues/5656).
+    "httpx>=0.23.3",  # FastAPI does not correctly pull starlette dependency on httpx see thread(https://github.com/tiangolo/fastapi/issues/5656).
 ]
 
 GCP_REQUIRED = [
@@ -142,69 +141,75 @@ AZURE_REQUIRED = [
     "pymssql",
 ]
 
+ROCKSET_REQUIRED = [
+    "rockset>=1.0.3",
+]
+
 HAZELCAST_REQUIRED = [
     "hazelcast-python-client>=5.1",
 ]
 
 CI_REQUIRED = (
-        [
-            "build",
-            "cryptography>=35.0,<36",
-            "flake8",
-            "black>=22.6.0,<23",
-            "isort>=5,<6",
-            "grpcio-tools>=1.47.0",
-            "grpcio-testing>=1.47.0",
-            "minio==7.1.0",
-            "mock==2.0.0",
-            "moto<4",
-            "mypy>=0.981,<0.990",
-            "mypy-protobuf==3.1",
-            "avro==1.10.0",
-            "gcsfs>=0.4.0,<=2022.01.0",
-            "urllib3>=1.25.4,<2",
-            "psutil==5.9.0",
-            "py>=1.11.0",  # https://github.com/pytest-dev/pytest/issues/10420
-            "pytest>=6.0.0,<8",
-            "pytest-cov",
-            "pytest-xdist",
-            "pytest-benchmark>=3.4.1,<4",
-            "pytest-lazy-fixture==0.6.3",
-            "pytest-timeout==1.4.2",
-            "pytest-ordering~=0.6.0",
-            "pytest-mock==1.10.4",
-            "Sphinx>4.0.0,<7",
-            "testcontainers>=3.5,<4",
-            "adlfs==0.5.9",
-            "firebase-admin>=5.2.0,<6",
-            "pre-commit",
-            "assertpy==1.1",
-            "pip-tools",
-            "pybindgen",
-            "types-protobuf~=3.19.22",
-            "types-python-dateutil",
-            "types-pytz",
-            "types-PyYAML",
-            "types-redis",
-            "types-requests",
-            "types-setuptools",
-            "types-tabulate",
-        ]
-        + GCP_REQUIRED
-        + REDIS_REQUIRED
-        + AWS_REQUIRED
-        + BYTEWAX_REQUIRED
-        + SNOWFLAKE_REQUIRED
-        + SPARK_REQUIRED
-        + POSTGRES_REQUIRED
-        + MYSQL_REQUIRED
-        + TRINO_REQUIRED
-        + GE_REQUIRED
-        + HBASE_REQUIRED
-        + CASSANDRA_REQUIRED
-        + AZURE_REQUIRED
-        + HAZELCAST_REQUIRED
+    [
+        "build",
+        "cryptography>=35.0,<36",
+        "flake8",
+        "black>=22.6.0,<23",
+        "isort>=5,<6",
+        "grpcio-tools>=1.47.0",
+        "grpcio-testing>=1.47.0",
+        "minio==7.1.0",
+        "mock==2.0.0",
+        "moto<4",
+        "mypy>=0.981,<0.990",
+        "mypy-protobuf==3.1",
+        "avro==1.10.0",
+        "gcsfs>=0.4.0,<=2022.01.0",
+        "urllib3>=1.25.4,<2",
+        "psutil==5.9.0",
+        "py>=1.11.0",  # https://github.com/pytest-dev/pytest/issues/10420
+        "pytest>=6.0.0,<8",
+        "pytest-cov",
+        "pytest-xdist",
+        "pytest-benchmark>=3.4.1,<4",
+        "pytest-lazy-fixture==0.6.3",
+        "pytest-timeout==1.4.2",
+        "pytest-ordering~=0.6.0",
+        "pytest-mock==1.10.4",
+        "Sphinx>4.0.0,<7",
+        "testcontainers>=3.5,<4",
+        "adlfs==0.5.9",
+        "firebase-admin>=5.2.0,<6",
+        "pre-commit",
+        "assertpy==1.1",
+        "pip-tools",
+        "pybindgen",
+        "types-protobuf~=3.19.22",
+        "types-python-dateutil",
+        "types-pytz",
+        "types-PyYAML",
+        "types-redis",
+        "types-requests",
+        "types-setuptools",
+        "types-tabulate",
+    ]
+    + GCP_REQUIRED
+    + REDIS_REQUIRED
+    + AWS_REQUIRED
+    + BYTEWAX_REQUIRED
+    + SNOWFLAKE_REQUIRED
+    + SPARK_REQUIRED
+    + POSTGRES_REQUIRED
+    + MYSQL_REQUIRED
+    + TRINO_REQUIRED
+    + GE_REQUIRED
+    + HBASE_REQUIRED
+    + CASSANDRA_REQUIRED
+    + AZURE_REQUIRED
+    + ROCKSET_REQUIRED
+    + HAZELCAST_REQUIRED
 )
+
 
 # rtd builds fail because of mysql not being installed in their environment.
 # We can add mysql there, but it's not strictly needed. This will be faster for builds.
@@ -497,7 +502,7 @@ class build_ext(_build_ext):
             src_dir = dest_dir = package_dir
 
             if src_dir.startswith(PYTHON_CODE_PREFIX):
-                src_dir = package_dir[len(PYTHON_CODE_PREFIX):]
+                src_dir = package_dir[len(PYTHON_CODE_PREFIX) :]
             src_dir = src_dir.lstrip("/")
 
             src_dir = os.path.join(self.build_lib, src_dir)
