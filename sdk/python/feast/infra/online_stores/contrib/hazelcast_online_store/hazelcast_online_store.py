@@ -1,19 +1,18 @@
 import logging
 from datetime import datetime
 from typing import Sequence, List, Optional, Tuple, Dict, Callable, Any, Literal
+
 import pytz
+from hazelcast.client import HazelcastClient
 from hazelcast.core import HazelcastJsonValue
+from pydantic import StrictStr
 
 from feast import RepoConfig, FeatureView, Entity
 from feast.infra.key_encoding_utils import serialize_entity_key
 from feast.infra.online_stores.online_store import OnlineStore
 from feast.protos.feast.types.EntityKey_pb2 import EntityKey as EntityKeyProto
 from feast.protos.feast.types.Value_pb2 import Value as ValueProto
-import hazelcast
-
 from feast.repo_config import FeastConfigBaseModel
-from pydantic import StrictStr
-
 from feast.usage import log_exceptions_and_usage
 
 
@@ -49,13 +48,13 @@ class HazelcastOnlineStoreConfig(FeastConfigBaseModel):
 
 
 class HazelcastOnlineStore(OnlineStore):
-    _client: Optional[hazelcast.HazelcastClient] = None
+    _client: Optional[HazelcastClient] = None
 
     def _get_client(self, config: HazelcastOnlineStoreConfig):
         logging.getLogger("hazelcast").setLevel(logging.ERROR)
         if not self._client:
             if config.discovery_token != "":
-                self._client = hazelcast.HazelcastClient(
+                self._client = HazelcastClient(
                     cluster_name=config.cluster_name,
                     statistics_enabled=True,
                     ssl_enabled=True,
@@ -66,7 +65,7 @@ class HazelcastOnlineStore(OnlineStore):
                     ssl_password=config.ssl_password
                 )
             elif config.ssl_cafile_path != "":
-                self._client = hazelcast.HazelcastClient(
+                self._client = HazelcastClient(
                     cluster_name=config.cluster_name,
                     statistics_enabled=True,
                     ssl_enabled=True,
@@ -76,7 +75,7 @@ class HazelcastOnlineStore(OnlineStore):
                     ssl_password=config.ssl_password
                 )
             else:
-                self._client = hazelcast.HazelcastClient(
+                self._client = HazelcastClient(
                     statistics_enabled=True,
                     cluster_members=config.cluster_members,
                     cluster_name=config.cluster_name
