@@ -3,9 +3,7 @@ from datetime import datetime
 
 import pandas as pd
 import websocket
-from pydantic import BaseModel
 from feast.data_source import PushMode
-from feast.errors import PushSourceNotFoundException
 
 import feast
 
@@ -17,7 +15,6 @@ class WebsocketClient:
         self.to = to
 
     def push_sfv(self, app, message):
-        print(message)
         message = json.loads(message)
         message["created"] = datetime.strptime(message["created"], '%Y-%m-%d %H:%M:%S')
         message["event_timestamp"] = datetime.strptime(message["event_timestamp"], '%Y-%m-%d %H:%M:%S')
@@ -30,8 +27,7 @@ class WebsocketClient:
             self.store.write_to_offline_store(self.sfv.name, rows)
 
 
-def start_websocket_client(store: "feast.FeatureStore", host: str, port: int):
-    print("Now websocket client is starting to listen!")
-    client = WebsocketClient(store, store.get_stream_feature_view("stream_driver_hourly_stats"), PushMode.ONLINE_AND_OFFLINE)
+def start_websocket_client(store: "feast.FeatureStore", host: str, port: int, to: PushMode):
+    client = WebsocketClient(store, store.get_stream_feature_view("stream_driver_hourly_stats"), to)
     app = websocket.WebSocketApp(f"ws://{host}:{port}/push", on_message=client.push_sfv)
     app.run_forever()
