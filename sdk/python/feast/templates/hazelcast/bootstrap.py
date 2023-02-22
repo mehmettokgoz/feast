@@ -14,18 +14,12 @@
 #  limitations under the License.
 #
 
-import os
 import pathlib
-import sys
 from datetime import datetime, timedelta
 
 import click
 
-from feast.file_utils import (
-    remove_lines_from_file,
-    replace_str_in_file,
-    write_setting_or_remove,
-)
+from feast.file_utils import replace_str_in_file, write_setting_or_remove
 
 
 def collect_hazelcast_online_store_settings():
