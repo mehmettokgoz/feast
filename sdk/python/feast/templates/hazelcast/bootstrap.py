@@ -29,160 +29,122 @@ from feast.file_utils import (
 
 
 def collect_hazelcast_online_store_settings():
+    c_cluster_name = ""
+    c_members = None
+    c_ca_path = None
+    c_cert_path = None
+    c_key_path = None
+    c_ssl_password = None
+    c_discovery_token = None
+    c_ttl_seconds = 0
 
-    db_type = click.prompt(
-        "Would you like to connect a Local cluster or [V]iridian cluster?",
-        type=click.Choice(["local", "viridian"]),
+    cluster_type = click.prompt(
+        "Would you like to connect a [L]ocal cluster or [V]iridian cluster?",
+        type=click.Choice(["L", "V"]),
         show_choices=False,
-        default="C",
+        default="L",
     )
-    is_astra = db_type == "A"
+    is_viridian = cluster_type == "V"
 
-    if is_astra:
-        c_secure_bundle_path = click.prompt(
-            "Enter the full path to your Secure Connect Bundle"
+    if is_viridian:
+        c_cluster_name = click.prompt(
+            "Cluster ID: "
         )
-        c_hosts = None
-        c_port = None
-        c_username = click.prompt("Enter the Client ID from your Astra DB token")
-        c_password = click.prompt(
-            "Enter the Client Secret from your Astra DB token",
-            hide_input=True,
+        c_discovery_token = click.prompt(
+            "Discovery Token: "
         )
+        c_ca_path = click.prompt("CA file path: ")
+        c_cert_path = click.prompt("CERT file path: ")
+        c_key_path = click.prompt("Key file path: ")
+        c_ssl_password = click.prompt("SSL password: ")
     else:
-        # it's regular Cassandra
-        c_secure_bundle_path = None
-        hosts_string = click.prompt(
-            ("Enter the seed hosts of your cluster " "(comma-separated IP addresses)"),
-            default="127.0.0.1",
+        c_cluster_name = click.prompt(
+            "Cluster_name: ",
+            default="dev",
         )
-        c_hosts = [
-            haddr
-            for haddr in (host.strip() for host in hosts_string.split(","))
-            if haddr != ""
-        ]
-        if not c_hosts:
-            print("*Error* : seed host list cannot be empty.")
-            sys.exit(1)
-        needs_port = click.confirm("Need to specify port?", default=False)
-        if needs_port:
-            c_port = click.prompt("    Port to use", default=9042, type=int)
-        else:
-            c_port = None
-        use_auth = click.confirm(
-            "Do you need username/password?",
-            default=False,
+        c_members = click.prompt(
+            "Cluster members:",
+            default="localhost:5701",
         )
-        if use_auth:
-            c_username = click.prompt("    Database username")
-            c_password = click.prompt("    Database password", hide_input=True)
-        else:
-            c_username = None
-            c_password = None
 
+        needs_ssl = click.confirm("Use TLS/SSL?", default=False)
+        if needs_ssl:
+            c_ca_path = click.prompt("CA file path: ")
+            c_cert_path = click.prompt("CERT file path: ")
+            c_key_path = click.prompt("Key file path: ")
+            c_ssl_password = click.prompt("SSL password: ")
 
+    c_ttl_seconds = click.prompt(
+        "Key TTL seconds: ",
+        default=0,
+    )
     return {
-        "c_secure_bundle_path": c_secure_bundle_path,
-        "c_hosts": c_hosts,
-        "c_port": c_port,
+        "c_cluster_name": c_cluster_name,
+        "c_members": c_members,
+        "c_ca_path": c_ca_path,
+        "c_cert_path": c_cert_path,
+        "c_key_path": c_key_path,
+        "c_ssl_password": c_ssl_password,
+        "c_discovery_token": c_discovery_token,
+        "c_ttl_seconds": c_ttl_seconds,
     }
 
 
 def apply_cassandra_store_settings(config_file, settings):
-    """
-    In-place replacements to `config_file` according to the settings
-    to make the yaml a proper Cassandra/AstraDB feature-store yaml.
-    `settings` must have all its keys, possibly the optional ones set to None:
-        'c_secure_bundle_path'
-        'c_hosts'
-        'c_port'
-        'c_username'
-        'c_password'
-        'c_keyspace'
-        'c_protocol_version'
-        'c_local_dc'
-        'c_load_balancing_policy'
-        'c_r_concurrency'
-        'c_w_concurrency'
-    """
+
     write_setting_or_remove(
         config_file,
-        settings["c_secure_bundle_path"],
-        "secure_bundle_path",
-        "/path/to/secure/bundle.zip",
-    )
-    #
-    if settings["c_hosts"]:
-        replace_str_in_file(
-            config_file,
-            "        - 127.0.0.1",
-            os.linesep.join(f"        - {c_host}" for c_host in settings["c_hosts"]),
-        )
-    else:
-        remove_lines_from_file(config_file, "hosts:")
-        remove_lines_from_file(config_file, "- 127.0.0.1")
-    #
-    write_setting_or_remove(
-        config_file,
-        settings["c_port"],
-        "port",
-        "9042",
+        settings["c_cluster_name"],
+        "cluster_name",
+        "c_cluster_name",
     )
     #
     write_setting_or_remove(
         config_file,
-        settings["c_username"],
-        "username",
-        "c_username",
+        "[" + settings["c_members"] + "]",
+        "cluster_members",
+        "c_members",
     )
     #
     write_setting_or_remove(
         config_file,
-        settings["c_password"],
-        "password",
-        "c_password",
+        settings["c_discovery_token"],
+        "discovery_token",
+        "c_discovery_token",
+    )
+    #
+    write_setting_or_remove(
+        config_file,
+        settings["c_ca_path"],
+        "ssl_cafile_path",
+        "c_ca_path",
+    )
+    #
+    write_setting_or_remove(
+        config_file,
+        settings["c_cert_path"],
+        "ssl_certfile_path",
+        "c_cert_path",
+    )
+    #
+    write_setting_or_remove(
+        config_file,
+        settings["c_key_path"],
+        "ssl_keyfile_path",
+        "c_key_path",
+    )
+    #
+    write_setting_or_remove(
+        config_file,
+        settings["c_ssl_password"],
+        "ssl_password",
+        "c_ssl_password",
     )
     #
     replace_str_in_file(
         config_file,
-        "feast_keyspace",
-        settings["c_keyspace"],
-    )
-    #
-    write_setting_or_remove(
-        config_file,
-        settings["c_protocol_version"],
-        "protocol_version",
-        "c_protocol_version",
-    )
-    # it is assumed that if there's local_dc also there's l.b.p.
-    if settings["c_local_dc"] is not None:
-        replace_str_in_file(
-            config_file,
-            "c_local_dc",
-            settings["c_local_dc"],
-        )
-        replace_str_in_file(
-            config_file,
-            "c_load_balancing_policy",
-            settings["c_load_balancing_policy"],
-        )
-    else:
-        remove_lines_from_file(config_file, "load_balancing:")
-        remove_lines_from_file(config_file, "local_dc:")
-        remove_lines_from_file(config_file, "load_balancing_policy:")
-
-    write_setting_or_remove(
-        config_file,
-        settings["c_r_concurrency"],
-        "read_concurrency",
-        "c_r_concurrency",
-    )
-    write_setting_or_remove(
-        config_file,
-        settings["c_w_concurrency"],
-        "write_concurrency",
-        "c_w_concurrency",
+        "c_ttl_seconds",
+        f"{settings['c_ttl_seconds']}",
     )
 
 
