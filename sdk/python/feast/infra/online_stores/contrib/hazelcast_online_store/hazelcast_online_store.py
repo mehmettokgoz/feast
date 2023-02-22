@@ -105,7 +105,7 @@ class HazelcastOnlineStore(OnlineStore):
                 entity_key_serialization_version=config.entity_key_serialization_version,
             ).hex()
             event_ts_utc = _to_utc_timestamp(event_ts)
-            created_ts_utc = 0
+            created_ts_utc = 0.0
             if created_ts is not None:
                 created_ts_utc = _to_utc_timestamp(created_ts)
             for feature_name, value in values.items():
@@ -144,8 +144,8 @@ class HazelcastOnlineStore(OnlineStore):
                 for feature in requested_features:
                     feature_keys.append(entity_key_str + feature)
             else:
-                for feature in table.features:
-                    feature_keys.append(entity_key_str + feature.name)
+                for f in table.features:
+                    feature_keys.append(entity_key_str + f.name)
             hz_keys.extend(feature_keys)
             entity_keys_str[entity_key_str] = feature_keys
 
@@ -158,11 +158,11 @@ class HazelcastOnlineStore(OnlineStore):
             except KeyError:
                 continue
 
-        for entity_key in entity_keys_str:
-            if entity_key in entities:
+        for curr_key in entity_keys_str:
+            if curr_key in entities:
                 entry = dict()
                 event_ts: Optional[datetime] = None
-                for _key in entity_keys_str[entity_key]:
+                for _key in entity_keys_str[curr_key]:
                     row = data[_key]
                     value = ValueProto()
                     value.ParseFromString(bytes.fromhex(row["feature_value"]))
