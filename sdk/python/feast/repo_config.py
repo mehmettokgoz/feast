@@ -51,9 +51,9 @@ ONLINE_STORE_CLASS_FOR_TYPE = {
     "bigtable": "feast.infra.online_stores.bigtable.BigtableOnlineStore",
     "postgres": "feast.infra.online_stores.contrib.postgres.PostgreSQLOnlineStore",
     "hbase": "feast.infra.online_stores.contrib.hbase_online_store.hbase.HbaseOnlineStore",
-    "hazelcast": "feast.infra.online_stores.contrib.hazelcast_online_store.hazelcast_online_store.HazelcastOnlineStore",
     "cassandra": "feast.infra.online_stores.contrib.cassandra_online_store.cassandra_online_store.CassandraOnlineStore",
     "mysql": "feast.infra.online_stores.contrib.mysql_online_store.mysql.MySQLOnlineStore",
+    "hazelcast": "feast.infra.online_stores.contrib.hazelcast_online_store.hazelcast_online_store.HazelcastOnlineStore",
 }
 
 OFFLINE_STORE_CLASS_FOR_TYPE = {

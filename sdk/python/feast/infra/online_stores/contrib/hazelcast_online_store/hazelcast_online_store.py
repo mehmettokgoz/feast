@@ -8,7 +8,7 @@ from feast import RepoConfig, FeatureView, Entity
 from feast.infra.key_encoding_utils import serialize_entity_key
 from feast.infra.online_stores.online_store import OnlineStore
 from feast.protos.feast.types.EntityKey_pb2 import EntityKey as EntityKeyProto
-from feast.protos.feast.types.Value_pb2 import Value as ValueProto, Value
+from feast.protos.feast.types.Value_pb2 import Value as ValueProto
 import hazelcast
 
 from feast.repo_config import FeastConfigBaseModel
@@ -33,7 +33,7 @@ class HazelcastOnlineStoreConfig(FeastConfigBaseModel):
     """The discovery token of your Hazelcast Viridian cluster"""
 
     ssl_cafile_path: Optional[StrictStr] = ""
-    """Absolute path of concatenated CA certificates used to validate server's certificates in PEM format."""
+    """Absolute path of CA certificates in PEM format."""
 
     ssl_certfile_path: Optional[StrictStr] = ""
     """Absolute path of the client certificate in PEM format."""
@@ -45,7 +45,7 @@ class HazelcastOnlineStoreConfig(FeastConfigBaseModel):
     """Password for decrypting the keyfile if it is encrypted."""
 
     key_ttl_seconds: Optional[int] = 0
-    """(Optional) Hazelcast key bin ttl (in seconds) for expiring entities"""
+    """Hazelcast key bin TTL (in seconds) for expiring entities"""
 
 
 class HazelcastOnlineStore(OnlineStore):
@@ -111,10 +111,12 @@ class HazelcastOnlineStore(OnlineStore):
             for feature_name, value in values.items():
                 feature_value = value.SerializeToString().hex()
                 __key = str(entity_key_bin) + feature_name
-                fv_map.put(__key, HazelcastJsonValue({"feature_name": feature_name,
+                fv_map.put(__key, HazelcastJsonValue({"entity_key": entity_key_bin,
+                                                      "feature_name": feature_name,
                                                       "feature_value": feature_value,
                                                       "event_ts": event_ts_utc,
-                                                      "created_ts": created_ts_utc}), config.online_store.key_ttl_seconds)
+                                                      "created_ts": created_ts_utc}),
+                           config.online_store.key_ttl_seconds)
                 if progress:
                     progress(1)
 
@@ -129,28 +131,39 @@ class HazelcastOnlineStore(OnlineStore):
         assert isinstance(online_store_config, HazelcastOnlineStoreConfig)
 
         client = self._get_client(online_store_config)
-
         entries: List[Tuple[Optional[datetime], Optional[Dict[str, ValueProto]]]] = []
         fv_map = client.get_map(_table_id(config.project, table))
 
+        hz_keys = []
+        entity_keys_str = {}
         for entity_key in entity_keys:
+            feature_keys = []
             entity_key_str = str(serialize_entity_key(entity_key,
                                                       entity_key_serialization_version=config.entity_key_serialization_version).hex())
-            __keys = []
-
             if requested_features:
                 for feature in requested_features:
-                    __keys.append(entity_key_str + feature)
+                    feature_keys.append(entity_key_str + feature)
             else:
                 for feature in table.features:
-                    __keys.append(entity_key_str + feature.name)
+                    feature_keys.append(entity_key_str + feature.name)
+            hz_keys.extend(feature_keys)
+            entity_keys_str[entity_key_str] = feature_keys
 
-            data = fv_map.get_all(__keys).result()
-            entry = dict()
-            event_ts: Optional[datetime] = None
-            if data:
-                for _key in data:
-                    row = data[_key].loads()
+        data = fv_map.get_all(hz_keys).result()
+        entities = []
+        for _key in hz_keys:
+            try:
+                data[_key] = data[_key].loads()
+                entities.append(data[_key]["entity_key"])
+            except KeyError:
+                continue
+
+        for entity_key in entity_keys_str:
+            if entity_key in entities:
+                entry = dict()
+                event_ts: Optional[datetime] = None
+                for _key in entity_keys_str[entity_key]:
+                    row = data[_key]
                     value = ValueProto()
                     value.ParseFromString(bytes.fromhex(row["feature_value"]))
                     entry[row["feature_name"]] = value
@@ -179,10 +192,11 @@ class HazelcastOnlineStore(OnlineStore):
             client.sql.execute(
                 f"""CREATE OR REPLACE MAPPING {_table_id(project, table)} (
                         __key VARCHAR,
+                        entity_key VARCHAR,
                         feature_name VARCHAR,
                         feature_value VARCHAR,
-                        event_ts INTEGER,
-                        created_ts INTEGER
+                        event_ts DECIMAL,
+                        created_ts DECIMAL
                     )
                     TYPE IMap
                     OPTIONS (
@@ -216,8 +230,8 @@ def _table_id(project: str, table: FeatureView) -> str:
     return f"{project}_{table.name}"
 
 
-def _to_utc_timestamp(ts: datetime) -> int:
-    if ts.tzinfo is None:
-        return int(ts.timestamp())
-    else:
-        return int(ts.astimezone(pytz.utc).replace(tzinfo=None).timestamp())
+def _to_utc_timestamp(ts: datetime) -> float:
+    local = pytz.timezone("UTC")
+    local_dt = local.localize(ts, is_dst=None)
+    utc_dt = local_dt.astimezone(pytz.utc)
+    return utc_dt.timestamp()

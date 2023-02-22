@@ -48,10 +48,8 @@ REQUIRES_PYTHON = ">=3.8.0"
 REQUIRED = [
     "click>=7.0.0,<9.0.0",
     "colorama>=0.3.9,<1",
-    "dill==0.3.*",
+    "dill~=0.3.0",
     "fastavro>=1.1.0,<2",
-    "google-api-core>=1.23.0,<3",
-    "googleapis-common-protos>=1.52.*,<2",
     "grpcio>=1.47.0,<2",
     "grpcio-reflection>=1.47.0,<2",
     "Jinja2>=2,<4",
@@ -59,13 +57,14 @@ REQUIRED = [
     "mmh3",
     "numpy>=1.22,<3",
     "pandas>=1.4.3,<2",
-    "pandavro==1.5.*",  # For some reason pandavro higher than 1.5.* only support pandas less than 1.3.
-    "protobuf<5,>3",
+    "pandavro~=1.5.0",  # For some reason pandavro higher than 1.5.* only support pandas less than 1.3.
+    "protobuf<5,>3.20",
     "proto-plus>=1.20.0,<2",
     "pyarrow>=4,<9",
     "pydantic>=1,<2",
     "pygments>=2.12.0,<3",
-    "PyYAML>=5.4.*,<7",
+    "PyYAML>=5.4.0,<7",
+    "requests",
     "SQLAlchemy[mypy]>1,<2",
     "tabulate>=0.8.0,<1",
     "tenacity>=7,<9",
@@ -74,16 +73,20 @@ REQUIRED = [
     "typeguard",
     "fastapi>=0.68.0,<1",
     "uvicorn[standard]>=0.14.0,<1",
-    "dask>=2021.*",
+    "dask>=2021.1.0",
     "bowler",  # Needed for automatic repo upgrades
+    "httpx>=0.23.3",
+    # FastAPI does not correctly pull starlette dependency on httpx see thread(https://github.com/tiangolo/fastapi/issues/5656).
 ]
 
 GCP_REQUIRED = [
+    "google-api-core>=1.23.0,<3",
+    "googleapis-common-protos>=1.52.0,<2",
     "google-cloud-bigquery[pandas]>=2,<4",
     "google-cloud-bigquery-storage >= 2.0.0,<3",
-    "google-cloud-datastore>=2.1.*,<3",
-    "google-cloud-storage>=1.34.*,<3",
-    "google-cloud-bigtable>=2.11.*,<3",
+    "google-cloud-datastore>=2.1.0,<3",
+    "google-cloud-storage>=1.34.0,<3",
+    "google-cloud-bigtable>=2.11.0,<3",
 ]
 
 REDIS_REQUIRED = [
@@ -125,14 +128,10 @@ CASSANDRA_REQUIRED = [
     "cassandra-driver>=3.24.0,<4",
 ]
 
-HAZELCAST_REQUIRED = [
-    "hazelcast-python-client>=5.1.0",
-]
-
 GE_REQUIRED = ["great_expectations>=0.14.0,<0.15.0"]
 
 GO_REQUIRED = [
-    "cffi==1.15.*,<2",
+    "cffi~=1.15.0",
 ]
 
 AZURE_REQUIRED = [
@@ -143,66 +142,69 @@ AZURE_REQUIRED = [
     "pymssql",
 ]
 
-CI_REQUIRED = (
-    [
-        "build",
-        "cryptography>=35.0,<36",
-        "flake8",
-        "black>=22.6.0,<23",
-        "isort>=5,<6",
-        "grpcio-tools>=1.47.0",
-        "grpcio-testing>=1.47.0",
-        "minio==7.1.0",
-        "mock==2.0.0",
-        "moto<4",
-        "mypy>=0.931",
-        "mypy-protobuf==3.1",
-        "avro==1.10.0",
-        "gcsfs>=0.4.0,<=2022.01.0",
-        "urllib3>=1.25.4,<2",
-        "psutil==5.9.0",
-        "pytest>=6.0.0,<8",
-        "pytest-cov",
-        "pytest-xdist",
-        "pytest-benchmark>=3.4.1,<4",
-        "pytest-lazy-fixture==0.6.3",
-        "pytest-timeout==1.4.2",
-        "pytest-ordering==0.6.*",
-        "pytest-mock==1.10.4",
-        "Sphinx!=4.0.0,<4.4.0",
-        "sphinx-rtd-theme",
-        "testcontainers>=3.5,<4",
-        "adlfs==0.5.9",
-        "firebase-admin>=5.2.0,<6",
-        "pre-commit",
-        "assertpy==1.1",
-        "pip-tools",
-        "pybindgen",
-        "types-protobuf",
-        "types-python-dateutil",
-        "types-pytz",
-        "types-PyYAML",
-        "types-redis",
-        "types-requests",
-        "types-setuptools",
-        "types-tabulate",
-    ]
-    + GCP_REQUIRED
-    + REDIS_REQUIRED
-    + AWS_REQUIRED
-    + BYTEWAX_REQUIRED
-    + SNOWFLAKE_REQUIRED
-    + SPARK_REQUIRED
-    + POSTGRES_REQUIRED
-    + MYSQL_REQUIRED
-    + TRINO_REQUIRED
-    + GE_REQUIRED
-    + HBASE_REQUIRED
-    + CASSANDRA_REQUIRED
-    + AZURE_REQUIRED
-    + HAZELCAST_REQUIRED
-)
+HAZELCAST_REQUIRED = [
+    "hazelcast-python-client>=5.1",
+]
 
+CI_REQUIRED = (
+        [
+            "build",
+            "cryptography>=35.0,<36",
+            "flake8",
+            "black>=22.6.0,<23",
+            "isort>=5,<6",
+            "grpcio-tools>=1.47.0",
+            "grpcio-testing>=1.47.0",
+            "minio==7.1.0",
+            "mock==2.0.0",
+            "moto<4",
+            "mypy>=0.981,<0.990",
+            "mypy-protobuf==3.1",
+            "avro==1.10.0",
+            "gcsfs>=0.4.0,<=2022.01.0",
+            "urllib3>=1.25.4,<2",
+            "psutil==5.9.0",
+            "py>=1.11.0",  # https://github.com/pytest-dev/pytest/issues/10420
+            "pytest>=6.0.0,<8",
+            "pytest-cov",
+            "pytest-xdist",
+            "pytest-benchmark>=3.4.1,<4",
+            "pytest-lazy-fixture==0.6.3",
+            "pytest-timeout==1.4.2",
+            "pytest-ordering~=0.6.0",
+            "pytest-mock==1.10.4",
+            "Sphinx>4.0.0,<7",
+            "testcontainers>=3.5,<4",
+            "adlfs==0.5.9",
+            "firebase-admin>=5.2.0,<6",
+            "pre-commit",
+            "assertpy==1.1",
+            "pip-tools",
+            "pybindgen",
+            "types-protobuf~=3.19.22",
+            "types-python-dateutil",
+            "types-pytz",
+            "types-PyYAML",
+            "types-redis",
+            "types-requests",
+            "types-setuptools",
+            "types-tabulate",
+        ]
+        + GCP_REQUIRED
+        + REDIS_REQUIRED
+        + AWS_REQUIRED
+        + BYTEWAX_REQUIRED
+        + SNOWFLAKE_REQUIRED
+        + SPARK_REQUIRED
+        + POSTGRES_REQUIRED
+        + MYSQL_REQUIRED
+        + TRINO_REQUIRED
+        + GE_REQUIRED
+        + HBASE_REQUIRED
+        + CASSANDRA_REQUIRED
+        + AZURE_REQUIRED
+        + HAZELCAST_REQUIRED
+)
 
 # rtd builds fail because of mysql not being installed in their environment.
 # We can add mysql there, but it's not strictly needed. This will be faster for builds.
@@ -210,7 +212,7 @@ DOCS_REQUIRED = CI_REQUIRED.copy()
 for _r in MYSQL_REQUIRED:
     DOCS_REQUIRED.remove(_r)
 
-DEV_REQUIRED = ["mypy-protobuf==3.1", "grpcio-testing==1.*"] + CI_REQUIRED
+DEV_REQUIRED = ["mypy-protobuf==3.1", "grpcio-testing~=1.0"] + CI_REQUIRED
 
 # Get git repo root directory
 repo_root = str(pathlib.Path(__file__).resolve().parent)
@@ -495,7 +497,7 @@ class build_ext(_build_ext):
             src_dir = dest_dir = package_dir
 
             if src_dir.startswith(PYTHON_CODE_PREFIX):
-                src_dir = package_dir[len(PYTHON_CODE_PREFIX) :]
+                src_dir = package_dir[len(PYTHON_CODE_PREFIX):]
             src_dir = src_dir.lstrip("/")
 
             src_dir = os.path.join(self.build_lib, src_dir)
@@ -558,7 +560,6 @@ setup(
         "grpcio-tools>=1.47.0",
         "mypy-protobuf==3.1",
         "pybindgen==0.22.0",
-        "sphinx!=4.0.0",
     ],
     cmdclass={
         "build_python_protos": BuildPythonProtosCommand,
