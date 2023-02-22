@@ -28,14 +28,6 @@ feast.infra.registry.gcs module
    :undoc-members:
    :show-inheritance:
 
-feast.infra.registry.proto\_registry\_utils module
---------------------------------------------------
-
-.. automodule:: feast.infra.registry.proto_registry_utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 feast.infra.registry.registry module
 ------------------------------------
 
