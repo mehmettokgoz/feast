@@ -1,3 +1,4 @@
+import logging
 import random
 import string
 from typing import Any, Dict
@@ -16,9 +17,10 @@ class HazelcastOnlineStoreCreator(OnlineStoreCreator):
     container: DockerContainer = None
 
     def __init__(self, project_name: str, **kwargs):
+        logging.getLogger("hazelcast").setLevel(logging.ERROR)
         super().__init__(project_name)
         self.cluster_name = "".join(
-            random.choice(string.ascii_lowercase) for i in range(5)
+            random.choice(string.ascii_lowercase) for _ in range(5)
         )
         self.container = (
             DockerContainer("hazelcast/hazelcast")
