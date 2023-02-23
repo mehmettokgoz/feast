@@ -17,7 +17,7 @@
 """
 Hazelcast online store for Feast.
 """
-
+import base64
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple
 
@@ -153,22 +153,26 @@ class HazelcastOnlineStore(OnlineStore):
         fv_map = client.get_map(_imap_name(config.project, table))
 
         for entity_key, values, event_ts, created_ts in data:
-            entity_key_bin = serialize_entity_key(
-                entity_key,
-                entity_key_serialization_version=config.entity_key_serialization_version,
-            ).hex()
+            entity_key_str = base64.b64encode(
+                serialize_entity_key(
+                    entity_key,
+                    entity_key_serialization_version=config.entity_key_serialization_version,
+                )
+            ).decode("utf-8")
             event_ts_utc = _to_utc_timestamp(event_ts)
             created_ts_utc = 0.0
             if created_ts is not None:
                 created_ts_utc = _to_utc_timestamp(created_ts)
             for feature_name, value in values.items():
-                feature_value = value.SerializeToString().hex()
-                hz_combined_key = str(entity_key_bin) + feature_name
+                feature_value = base64.b64encode(value.SerializeToString()).decode(
+                    "utf-8"
+                )
+                hz_combined_key = entity_key_str + feature_name
                 fv_map.put(
                     hz_combined_key,
                     HazelcastJsonValue(
                         {
-                            D_ENTITY_KEY: entity_key_bin,
+                            D_ENTITY_KEY: entity_key_str,
                             D_FEATURE_NAME: feature_name,
                             D_FEATURE_VALUE: feature_value,
                             D_EVENT_TS: event_ts_utc,
@@ -201,12 +205,12 @@ class HazelcastOnlineStore(OnlineStore):
         hz_keys = []
         entity_keys_str = {}
         for entity_key in entity_keys:
-            entity_key_str = str(
+            entity_key_str = base64.b64encode(
                 serialize_entity_key(
                     entity_key,
                     entity_key_serialization_version=config.entity_key_serialization_version,
-                ).hex()
-            )
+                )
+            ).decode("utf-8")
             if requested_features:
                 feature_keys = [
                     entity_key_str + feature for feature in requested_features
@@ -232,7 +236,7 @@ class HazelcastOnlineStore(OnlineStore):
                 for f_key in entity_keys_str[key]:
                     row = data[f_key]
                     value = ValueProto()
-                    value.ParseFromString(bytes.fromhex(row[D_FEATURE_VALUE]))
+                    value.ParseFromString(base64.b64decode(row[D_FEATURE_VALUE]))
                     entry[row[D_FEATURE_NAME]] = value
                     event_ts = datetime.fromtimestamp(row[D_EVENT_TS], tz=timezone.utc)
                 entries.append((event_ts, entry))
