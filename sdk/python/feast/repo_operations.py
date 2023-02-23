@@ -14,7 +14,7 @@ from click.exceptions import BadParameter
 
 from feast import PushSource
 from feast.batch_feature_view import BatchFeatureView
-from feast.data_source import DataSource, KafkaSource, KinesisSource, HazelcastSource
+from feast.data_source import DataSource, HazelcastSource, KafkaSource, KinesisSource
 from feast.diff.registry_diff import extract_objects_for_keep_delete_update_add
 from feast.entity import Entity
 from feast.feature_service import FeatureService

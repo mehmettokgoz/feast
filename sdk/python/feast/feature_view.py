@@ -21,7 +21,13 @@ from typeguard import typechecked
 
 from feast import utils
 from feast.base_feature_view import BaseFeatureView
-from feast.data_source import DataSource, KafkaSource, KinesisSource, PushSource, HazelcastSource
+from feast.data_source import (
+    DataSource,
+    HazelcastSource,
+    KafkaSource,
+    KinesisSource,
+    PushSource,
+)
 from feast.entity import Entity
 from feast.feature_view_projection import FeatureViewProjection
 from feast.field import Field

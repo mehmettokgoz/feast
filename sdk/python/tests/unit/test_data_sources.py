@@ -1,13 +1,13 @@
 import pytest
 
-from feast.data_format import ProtoFormat, JsonFormat
+from feast.data_format import JsonFormat, ProtoFormat
 from feast.data_source import (
     DataSource,
+    HazelcastSource,
     KafkaSource,
     KinesisSource,
     PushSource,
     RequestSource,
-    HazelcastSource
 )
 from feast.field import Field
 from feast.infra.offline_stores.bigquery_source import BigQuerySource

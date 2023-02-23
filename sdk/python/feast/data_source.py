@@ -164,7 +164,6 @@ class HazelcastOptions:
         self.websocket_url = websocket_url
         self.stream_format = stream_format
 
-
     @classmethod
     def from_proto(cls, hazelcast_options_proto: DataSourceProto.HazelcastOptions):
         """
@@ -177,7 +176,9 @@ class HazelcastOptions:
         hazelcast_options = cls(
             imap_name=hazelcast_options_proto.imap_name,
             websocket_url=hazelcast_options_proto.websocket_url,
-            stream_format=StreamFormat.from_proto(hazelcast_options_proto.stream_format),
+            stream_format=StreamFormat.from_proto(
+                hazelcast_options_proto.stream_format
+            ),
         )
         return hazelcast_options
 
@@ -865,21 +866,21 @@ class PushSource(DataSource):
 
 @typechecked
 class HazelcastSource(DataSource):
-
-    def __init__(self,
-         *,
-         name: str,
-         timestamp_field: Optional[str] = None,
-         created_timestamp_column: Optional[str] = None,
-         field_mapping: Optional[Dict[str, str]] = None,
-         imap_name: Optional[str] = "",
-         websocket_url: Optional[str] = "",
-         stream_format: StreamFormat = None,
-         description: Optional[str] = "",
-         tags: Optional[Dict[str, str]] = None,
-         owner: Optional[str] = "",
-         batch_source: Optional[DataSource] = None,
-         date_partition_column: Optional[str] = None
+    def __init__(
+        self,
+        *,
+        name: str,
+        timestamp_field: Optional[str] = None,
+        created_timestamp_column: Optional[str] = None,
+        field_mapping: Optional[Dict[str, str]] = None,
+        imap_name: Optional[str] = "",
+        websocket_url: Optional[str] = "",
+        stream_format: StreamFormat = None,
+        description: Optional[str] = "",
+        tags: Optional[Dict[str, str]] = None,
+        owner: Optional[str] = "",
+        batch_source: Optional[DataSource] = None,
+        date_partition_column: Optional[str] = None,
     ):
         """
         Creates a HazelcastSource object.
@@ -895,7 +896,7 @@ class HazelcastSource(DataSource):
             description=description,
             tags=tags,
             owner=owner,
-            date_partition_column=date_partition_column
+            date_partition_column=date_partition_column,
         )
         imap_name = imap_name or ""
         websocket_url = websocket_url or ""
@@ -914,9 +915,11 @@ class HazelcastSource(DataSource):
         if not super().__eq__(other):
             return False
         if (
-                self.hazelcast_options.imap_name != other.hazelcast_options.imap_name
-                or self.hazelcast_options.websocket_url != other.hazelcast_options.websocket_url
-                or self.hazelcast_options.stream_format != other.hazelcast_options.stream_format
+            self.hazelcast_options.imap_name != other.hazelcast_options.imap_name
+            or self.hazelcast_options.websocket_url
+            != other.hazelcast_options.websocket_url
+            or self.hazelcast_options.stream_format
+            != other.hazelcast_options.stream_format
         ):
             return False
         return True
@@ -981,7 +984,9 @@ class HazelcastSource(DataSource):
     def source_datatype_to_feast_value_type() -> Callable[[str], ValueType]:
         pass
 
-    def get_table_column_names_and_types(self, config: RepoConfig) -> Iterable[Tuple[str, str]]:
+    def get_table_column_names_and_types(
+        self, config: RepoConfig
+    ) -> Iterable[Tuple[str, str]]:
         pass
 
     def get_table_query_string(self) -> str:
