@@ -18,6 +18,7 @@
 Hazelcast online store for Feast.
 """
 import base64
+import threading
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple
 
@@ -89,9 +90,11 @@ class HazelcastOnlineStore(OnlineStore):
 
     Attributes:
         _client: Hazelcast client connection.
+        _lock: Prevent race condition while creating the client connection
     """
 
     _client: Optional[HazelcastClient] = None
+    _lock = threading.Lock()
 
     def _get_client(self, config: HazelcastOnlineStoreConfig):
         """
@@ -104,33 +107,35 @@ class HazelcastOnlineStore(OnlineStore):
             config: The HazelcastOnlineStoreConfig for the online store.
         """
         if self._client is None:
-            if config.discovery_token != "":
-                self._client = HazelcastClient(
-                    cluster_name=config.cluster_name,
-                    statistics_enabled=True,
-                    ssl_enabled=True,
-                    cloud_discovery_token=config.discovery_token,
-                    ssl_cafile=config.ssl_cafile_path,
-                    ssl_certfile=config.ssl_certfile_path,
-                    ssl_keyfile=config.ssl_keyfile_path,
-                    ssl_password=config.ssl_password,
-                )
-            elif config.ssl_cafile_path != "":
-                self._client = HazelcastClient(
-                    cluster_name=config.cluster_name,
-                    statistics_enabled=True,
-                    ssl_enabled=True,
-                    ssl_cafile=config.ssl_cafile_path,
-                    ssl_certfile=config.ssl_certfile_path,
-                    ssl_keyfile=config.ssl_keyfile_path,
-                    ssl_password=config.ssl_password,
-                )
-            else:
-                self._client = HazelcastClient(
-                    statistics_enabled=True,
-                    cluster_members=config.cluster_members,
-                    cluster_name=config.cluster_name,
-                )
+            with self._lock:
+                if self._client is None:
+                    if config.discovery_token != "":
+                        self._client = HazelcastClient(
+                            cluster_name=config.cluster_name,
+                            statistics_enabled=True,
+                            ssl_enabled=True,
+                            cloud_discovery_token=config.discovery_token,
+                            ssl_cafile=config.ssl_cafile_path,
+                            ssl_certfile=config.ssl_certfile_path,
+                            ssl_keyfile=config.ssl_keyfile_path,
+                            ssl_password=config.ssl_password,
+                        )
+                    elif config.ssl_cafile_path != "":
+                        self._client = HazelcastClient(
+                            cluster_name=config.cluster_name,
+                            statistics_enabled=True,
+                            ssl_enabled=True,
+                            ssl_cafile=config.ssl_cafile_path,
+                            ssl_certfile=config.ssl_certfile_path,
+                            ssl_keyfile=config.ssl_keyfile_path,
+                            ssl_password=config.ssl_password,
+                        )
+                    else:
+                        self._client = HazelcastClient(
+                            statistics_enabled=True,
+                            cluster_members=config.cluster_members,
+                            cluster_name=config.cluster_name,
+                        )
         return self._client
 
     @log_exceptions_and_usage(online_store="hazelcast")
@@ -150,7 +155,7 @@ class HazelcastOnlineStore(OnlineStore):
             )
 
         client = self._get_client(online_store_config)
-        fv_map = client.get_map(_imap_name(config.project, table))
+        fv_map = client.get_map(_map_name(config.project, table))
 
         for entity_key, values, event_ts, created_ts in data:
             entity_key_str = base64.b64encode(
@@ -159,10 +164,10 @@ class HazelcastOnlineStore(OnlineStore):
                     entity_key_serialization_version=config.entity_key_serialization_version,
                 )
             ).decode("utf-8")
-            event_ts_utc = _to_utc_timestamp(event_ts)
+            event_ts_utc = pytz.utc.localize(event_ts, is_dst=None).timestamp()
             created_ts_utc = 0.0
             if created_ts is not None:
-                created_ts_utc = _to_utc_timestamp(created_ts)
+                created_ts_utc = pytz.utc.localize(created_ts, is_dst=None).timestamp()
             for feature_name, value in values.items():
                 feature_value = base64.b64encode(value.SerializeToString()).decode(
                     "utf-8"
@@ -200,7 +205,7 @@ class HazelcastOnlineStore(OnlineStore):
 
         client = self._get_client(online_store_config)
         entries: List[Tuple[Optional[datetime], Optional[Dict[str, ValueProto]]]] = []
-        fv_map = client.get_map(_imap_name(config.project, table))
+        fv_map = client.get_map(_map_name(config.project, table))
 
         hz_keys = []
         entity_keys_str = {}
@@ -264,7 +269,7 @@ class HazelcastOnlineStore(OnlineStore):
 
         for table in tables_to_keep:
             client.sql.execute(
-                f"""CREATE OR REPLACE MAPPING {_imap_name(project, table)} (
+                f"""CREATE OR REPLACE MAPPING {_map_name(project, table)} (
                         __key VARCHAR,
                         {D_ENTITY_KEY} VARCHAR,
                         {D_FEATURE_NAME} VARCHAR,
@@ -282,10 +287,10 @@ class HazelcastOnlineStore(OnlineStore):
 
         for table in tables_to_delete:
             client.sql.execute(
-                f"DELETE FROM {_imap_name(config.project, table)}"
+                f"DELETE FROM {_map_name(config.project, table)}"
             ).result()
             client.sql.execute(
-                f"DROP MAPPING IF EXISTS {_imap_name(config.project, table)}"
+                f"DROP MAPPING IF EXISTS {_map_name(config.project, table)}"
             ).result()
 
     def teardown(
@@ -304,16 +309,9 @@ class HazelcastOnlineStore(OnlineStore):
         project = config.project
 
         for table in tables:
-            client.sql.execute(f"DELETE FROM {_imap_name(config.project, table)}")
-            client.sql.execute(f"DROP MAPPING IF EXISTS {_imap_name(project, table)}")
+            client.sql.execute(f"DELETE FROM {_map_name(config.project, table)}")
+            client.sql.execute(f"DROP MAPPING IF EXISTS {_map_name(project, table)}")
 
 
-def _imap_name(project: str, table: FeatureView) -> str:
+def _map_name(project: str, table: FeatureView) -> str:
     return f"{project}_{table.name}"
-
-
-def _to_utc_timestamp(ts: datetime) -> float:
-    local = pytz.timezone("UTC")
-    local_dt = local.localize(ts, is_dst=None)
-    utc_dt = local_dt.astimezone(pytz.utc)
-    return utc_dt.timestamp()
